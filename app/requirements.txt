@@ -1,0 +1,9 @@
+pennylane
+matplotlib
+scikit-learn
+torch
+scikit-image
+seaborn
+nibabel
+ipykernel
+imbalanced-learn

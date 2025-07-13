@@ -1,0 +1,28 @@
+# Ignorar directorios y archivos de entorno Python
+__pycache__/
+.venv/
+env/
+venv/
+
+# Ignorar archivos de Jupyter Notebook
+.ipynb_checkpoints/
+
+# Ignorar archivos de datos y resultados grandes
+data/
+delete/
+
+# Ignorar archivos de logs
+*.log
+
+# Archivos específicos de sistemas operativos
+.DS_Store
+Thumbs.db
+
+# Archivos temporales de PyCharm / IDEs
+.idea/
+.vscode/
+
+# Archivos de configuración personal
+*.bak
+*.swp
+*~
