@@ -7,3 +7,5 @@ seaborn
 nibabel
 ipykernel
 imbalanced-learn
+tqdm
+numpy
