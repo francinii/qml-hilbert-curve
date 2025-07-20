@@ -63,6 +63,33 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+### 📥 Dataset Setup
+
+Get the data from the Kaggle dataset:  
+[Brain MRI Dataset on Kaggle](https://www.kaggle.com/datasets/pradeep2665/brain-mri/code)
+
+Place the extracted folders in your project as follows:
+
+```
+app/
+  data/
+    dataset_binary/
+      Training/
+        tumor/
+        no_tumor/
+      Testing/
+        tumor/
+        no_tumor/
+      Validation/
+        tumor/
+        no_tumor/
+```
+
+- **Each of the `Training`, `Testing`, and `Validation` folders must contain two subfolders:**
+  - `tumor/` (images with tumors)
+  - `no_tumor/` (images without tumors)
+- You can use the script [`app/scripts/create_binary_dataset.py`](app/scripts/create_binary_dataset.py) to help organize the dataset into this required structure automatically.
+
 ### 3️⃣ Run the Model or Notebooks
 
 - To run a Jupyter notebook for training or analysis:

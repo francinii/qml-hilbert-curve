@@ -3,8 +3,8 @@ import shutil
 import random
 
 def create_binary_dataset(
-    base_multiclass_path="app3/data/dataset_multiclase",
-    base_binary_path="app3/data/dataset_binary",
+    base_multiclass_path="app/data/dataset_multiclase",
+    base_binary_path="app/data/dataset_binary",
     target_tumor_types=["glioma_tumor", "pituitary_tumor", "meningioma_tumor"],
     no_tumor_class="no_tumor",
     splits=["Training", "Testing", "Validation"],
@@ -89,8 +89,8 @@ def create_binary_dataset(
 
 if __name__ == "__main__":
     # Ensure you set these paths correctly based on your project structure.
-    # This assumes 'app3' is in the current working directory where you run the script.
+    # This assumes 'app' is in the current working directory where you run the script.
     create_binary_dataset(
-        base_multiclass_path="app3/data/dataset_multiclase",
-        base_binary_path="app3/data/dataset_binary"
+        base_multiclass_path="app/data/dataset_multiclase",
+        base_binary_path="app/data/dataset_binary"
     )
