@@ -1,2 +1,0 @@
-date,execution_time,epochs,learning_rate,features,layers,batch_size,loss,accuracy,recall,f1_score
-2025-06-30 22:48:49,10230.91,20,0.01,4,12,16,0.39622488617897034,0.7384979724884033,0.8063063063063063,0.764257395547423
