@@ -10,7 +10,10 @@ venv/
 # Ignorar archivos de datos y resultados grandes
 data/
 delete/
+delete2/
+delete3/
 app_old/
+runs/
 
 # Ignorar archivos de logs
 *.log

@@ -1,0 +1,2 @@
+date,execution_time_seconds,epochs,learning_rate,features,layers,batch_size,loss,accuracy,recall,f1_score,best_epoch,model_filename,image_size
+2025-08-02 23:46:41,6967.61,200,0.05,12,3,64,0.3730,0.8497,0.8600,0.8515,198,NO_HILBERT_AUTOENCODER_BC_model_epoch_198_acc_0.8497.pt,128

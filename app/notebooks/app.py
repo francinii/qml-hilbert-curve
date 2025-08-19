@@ -11,6 +11,10 @@ import os
 import sys
 import os
 
+# Importar HilbertCurveProcessor
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from hilbert import HilbertCurveProcessor
+
 # --- Configuración de la página ---
 st.set_page_config(page_title="Clasificador de Tumores", page_icon="🧠", layout="centered")
 
@@ -61,51 +65,69 @@ class HybridModel(nn.Module):
         x = self.final_layer(x)
         return x
 
+# Definir la arquitectura del encoder (debe coincidir con el entrenamiento)
+class Encoder(nn.Module):
+    def __init__(self, latent_dim=12):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv1d(1, 16, kernel_size=7, stride=2, padding=3),
+            nn.ReLU(),
+            nn.MaxPool1d(2, stride=2),
+            nn.Conv1d(16, 32, kernel_size=5, stride=2, padding=2),
+            nn.ReLU(),
+            nn.MaxPool1d(2, stride=2),
+            nn.Conv1d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.ReLU(),
+            nn.MaxPool1d(2, stride=2),
+            nn.Flatten(),
+            nn.Linear(64 * 256, latent_dim)
+        )
+    def forward(self, x):
+        return self.encoder(x)
+
 # =============================================================================
 # 2. FUNCIONES DE CARGA Y PREPROCESAMIENTO
 # =============================================================================
 @st.cache_resource
 def load_artifacts(model_path):
-    """Carga el modelo y todos los artefactos de preprocesamiento."""
-    # Cargar el modelo
+    """Carga el modelo, el encoder y el scaler_angle para preprocesamiento."""
+    # Cargar el modelo principal
     model = HybridModel(input_features=PCA_FEATURES)
     model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     model.eval()
-    
-    # Derivar nombres de archivo de los preprocesadores a partir del nombre del modelo
+    # Cargar el encoder
     base_filename = os.path.splitext(os.path.basename(model_path))[0]
-    
-    # Asumimos que los artefactos están en la carpeta 'preprocessing' y el modelo en 'models'
-    # Esta estructura debe coincidir con la de tu script de entrenamiento
     models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'models'))
-
+    encoder_path = os.path.join(models_dir, f"{base_filename}_encoder.pt")
+    encoder = Encoder(latent_dim=12)
+    encoder_state = torch.load(encoder_path, map_location=torch.device('cpu'))
+    # Adaptar claves si es necesario
+    if all(not k.startswith('encoder.') for k in encoder_state.keys()):
+        encoder_state = {f'encoder.{k}': v for k, v in encoder_state.items()}
+    encoder.load_state_dict(encoder_state)
+    encoder.eval()
+    # Cargar scaler_angle
     pkl_files = glob.glob(os.path.join(models_dir, '*.pkl'))
-
-    
-    scaler_path = next((f for f in pkl_files if 'scaler.pkl' in f and 'angle' not in f), None)
-    pca_path = next((f for f in pkl_files if 'pca.pkl' in f), None)
     scaler_angle_path = next((f for f in pkl_files if 'scaler_angle.pkl' in f), None)
-
-    print("scaler_path:", scaler_path)
-    print("pca_path:", pca_path)
     print("scaler_angle_path:", scaler_angle_path)
-
-    # Cargar los artefactos (con la corrección del bug de intercambio)
-    scaler = joblib.load(scaler_path)
-    pca = joblib.load(pca_path)
+    if scaler_angle_path is None:
+        raise FileNotFoundError("No se encontró scaler_angle.pkl en la carpeta de modelos.")
     scaler_angle = joblib.load(scaler_angle_path)
-    
-    return model, scaler, pca, scaler_angle
+    return model, encoder, scaler_angle
 
-def preprocess_image(image_file, scaler, pca, scaler_angle):
-    image_size: int = 512,
-    """Preprocesa una imagen subida para la predicción."""
-    image = Image.open(image_file).convert('L').resize((image_size, image_size))
-    img_array = np.array(image)
-    flattened_img = img_array.flatten().reshape(1, -1) / 255.0
-    scaled_img = scaler.transform(flattened_img)
-    pca_img = pca.transform(scaled_img)
-    final_features = scaler_angle.transform(pca_img)
+def preprocess_image(image_file, encoder, scaler_angle):
+    # Procesar la imagen igual que en el entrenamiento (SIN Hilbert)
+    # 1. Convertir a escala de grises y redimensionar a 128x128
+    image = Image.open(image_file).convert('L').resize((128, 128))
+    img_array = np.array(image).astype(np.float32) / 255.0
+    # 2. Aplanar la imagen (sin transformación Hilbert)
+    flattened_img = img_array.flatten().reshape(1, -1)
+    # 3. Pasar por el encoder
+    x = torch.tensor(flattened_img, dtype=torch.float32).unsqueeze(1)  # (1, 1, 16384)
+    with torch.no_grad():
+        encoded = encoder(x).numpy()
+    # 4. Aplicar scaler_angle
+    final_features = scaler_angle.transform(encoded)
     return torch.tensor(final_features, dtype=torch.float32)
 
 # =============================================================================
@@ -129,12 +151,12 @@ model_path = os.path.join(MODELS_DIR, selected_model_file)
 
 
 try:
-    model, scaler, pca, scaler_angle = load_artifacts(model_path)
-    st.success(f"Modelo '{selected_model_file}' y preprocesadores cargados.", icon="✅")
+    model, encoder, scaler_angle = load_artifacts(model_path)
+    st.success(f"Modelo '{selected_model_file}', encoder y scaler_angle cargados.", icon="✅")
 except Exception as e:
     st.error(f"Error al cargar los artefactos para el modelo '{selected_model_file}'.")
     st.error(f"Detalle del error: {e}")
-    st.info("Asegúrate de que los archivos .pkl correspondientes existan en la carpeta '../preprocessing'.")
+    st.info("Asegúrate de que el archivo scaler_angle.pkl y el encoder correspondiente existan en la carpeta '../models'.")
     st.stop()
 
 uploaded_file = st.file_uploader("Elige una imagen para analizar...", type=["jpg", "jpeg", "png"])
@@ -143,7 +165,7 @@ if uploaded_file is not None:
     st.image(uploaded_file, caption="Imagen Subida", use_column_width=True)
     if st.button("Clasificar Imagen", use_container_width=True, type="primary"):
         with st.spinner("Analizando con el circuito cuántico..."):
-            input_tensor = preprocess_image(uploaded_file, scaler, pca, scaler_angle)
+            input_tensor = preprocess_image(uploaded_file, encoder, scaler_angle)
             with torch.no_grad():
                 output = model(input_tensor)
                 probability = torch.sigmoid(output)

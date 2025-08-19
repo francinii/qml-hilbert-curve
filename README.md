@@ -131,6 +131,7 @@ app/
 - **(Planned) Hilbert Curve:** Future versions will use Hilbert curve mapping to preserve spatial information before feature extraction.
 - **Hybrid Model:** Combines classical and quantum layers for robust binary classification.
 
+
 ---
 
 ## 🚀 Future Work
